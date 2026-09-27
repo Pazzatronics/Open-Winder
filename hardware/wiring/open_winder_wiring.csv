@@ -1,0 +1,47 @@
+ID,Subsystem,From Component,From Pin / Terminal,To Component,To Pin / Terminal,Signal,Firmware Reference,Notes
+P1,Mains power,AC mains line,L,LRS-350 PSU,L,AC line,n/a,Mains wiring: switched and fused. The LRS-350 power switch is the E-stop on the reference build (no firmware run-permit fitted).
+P2,Mains power,AC mains neutral,N,LRS-350 PSU,N,AC neutral,n/a,
+P3,Mains power,AC mains earth,PE,LRS-350 PSU,FG (earth),Protective earth,n/a,Also bond the machine frame to earth.
+P4,DC power,LRS-350 PSU,+V (terminal 1),Winder DM542T,+V,Motor supply +,n/a,DM542T accepts 20-50 VDC including back-EMF. Run each drive from its own PSU terminal pair (not daisy-chained) per the DM542T manual.
+P5,DC power,LRS-350 PSU,-V (terminal 1),Winder DM542T,GND,Motor supply return,n/a,
+P6,DC power,LRS-350 PSU,+V (terminal 2),Traverse DM542T,+V,Motor supply +,n/a,Separate terminal from P4.
+P7,DC power,LRS-350 PSU,-V (terminal 2),Traverse DM542T,GND,Motor supply return,n/a,Separate terminal from P5.
+P8,Logic power / comms,Teensy 4.1,Micro-USB,Host computer,USB,5 V power + USB serial,SERIAL_BAUD = 115200,All commands are typed over this port (Serial Monitor). Teensy 3.3 V rail also powers the HX711.
+W1,Winder drive signals,Teensy 4.1,Pin 2,Winder DM542T,PUL+,STEP,PIN_WINDER_STEP,Active on rising edge; 5 us pulse (STEP_PULSE_US). Common-cathode wiring: Teensy sources current into PUL+.
+W2,Winder drive signals,Teensy 4.1,GND,Winder DM542T,PUL-,STEP return,n/a,
+W3,Winder drive signals,Teensy 4.1,Pin 3,Winder DM542T,DIR+,DIR,PIN_WINDER_DIR,HIGH = CW with WINDER_DIR_INVERT = false. 5 us setup before first step (DIR_SETUP_US).
+W4,Winder drive signals,Teensy 4.1,GND,Winder DM542T,DIR-,DIR return,n/a,
+W5,Winder drive signals,Winder DM542T,ENA+ / ENA-,(none),Not connected,Enable,not used,Left unconnected = drive always enabled (DM542T default).
+W6,Winder motor,Winder DM542T,A+,Winder motor 23HS45-4204S,Black lead,Phase A+,n/a,Black + Green are one coil. Confirm pairs with a meter before powering.
+W7,Winder motor,Winder DM542T,A-,Winder motor 23HS45-4204S,Green lead,Phase A-,n/a,
+W8,Winder motor,Winder DM542T,B+,Winder motor 23HS45-4204S,Red lead,Phase B+,n/a,Red + Blue are the other coil.
+W9,Winder motor,Winder DM542T,B-,Winder motor 23HS45-4204S,Blue lead,Phase B-,n/a,Never plug or unplug motor leads with the drive powered.
+T1,Traverse drive signals,Teensy 4.1,Pin 4,Traverse DM542T,PUL+,STEP,PIN_TRAV_STEP,Active on rising edge; 5 us pulse.
+T2,Traverse drive signals,Teensy 4.1,GND,Traverse DM542T,PUL-,STEP return,n/a,
+T3,Traverse drive signals,Teensy 4.1,Pin 5,Traverse DM542T,DIR+,DIR,PIN_TRAV_DIR,HIGH = carriage toward TOP with TRAVERSE_DIR_INVERT = false. 60 us settle on each reversal (TRAV_REVERSAL_DIR_SETTLE_US).
+T4,Traverse drive signals,Teensy 4.1,GND,Traverse DM542T,DIR-,DIR return,n/a,
+T5,Traverse drive signals,Traverse DM542T,ENA+ / ENA-,(none),Not connected,Enable,not used,Left unconnected = drive always enabled.
+T6,Traverse motor,Traverse DM542T,A+,Traverse stepper motor,Black lead,Phase A+,n/a,Colours shown are for a 23HS45-4204S; use your motor's own datasheet if different.
+T7,Traverse motor,Traverse DM542T,A-,Traverse stepper motor,Green lead,Phase A-,n/a,
+T8,Traverse motor,Traverse DM542T,B+,Traverse stepper motor,Red lead,Phase B+,n/a,
+T9,Traverse motor,Traverse DM542T,B-,Traverse stepper motor,Blue lead,Phase B-,n/a,
+L1,Limit switches,Teensy 4.1,Pin 7,BOTTOM limit switch,COM,BOTTOM limit,PIN_BOTTOM_LIMIT,INPUT_PULLUP; firmware reads HIGH = tripped. 5 ms debounce (LIMIT_DEBOUNCE_US).
+L2,Limit switches,BOTTOM limit switch,NC,Teensy 4.1,GND,BOTTOM limit return,n/a,Use the NORMALLY CLOSED contact: idle = closed to GND = LOW; pressed = open = HIGH. A broken wire also reads HIGH so it fails safe as tripped.
+L3,Limit switches,Teensy 4.1,Pin 8,TOP limit switch,COM,TOP limit,PIN_TOP_LIMIT,INPUT_PULLUP; firmware reads HIGH = tripped. 5 ms debounce.
+L4,Limit switches,TOP limit switch,NC,Teensy 4.1,GND,TOP limit return,n/a,NC contact as for L2.
+H1,Tension (HX711),Teensy 4.1,3.3V,HX711 board,VCC,Logic/analog supply,n/a,Must be 3.3 V (not 5 V) so DT never exceeds Teensy 4.1 pin limits. If the board has a separate VDD pin tie it to 3.3 V too.
+H2,Tension (HX711),Teensy 4.1,GND,HX711 board,GND,Ground,n/a,
+H3,Tension (HX711),Teensy 4.1,Pin 30,HX711 board,DT (DOUT),Data out,PIN_HX711_DT,INPUT_PULLUP; LOW = conversion ready.
+H4,Tension (HX711),Teensy 4.1,Pin 31,HX711 board,SCK (CLK),Clock,PIN_HX711_SCK,Idles LOW; bit-banged at 500 ns (HX711_PULSE_NS). Held HIGH >60 us powers the HX711 down.
+H5,Tension (HX711),HX711 board,E+,Load cell,Red lead (typical),Excitation +,n/a,Load cell colours vary by maker - check the label on your cell.
+H6,Tension (HX711),HX711 board,E-,Load cell,Black lead (typical),Excitation -,n/a,
+H7,Tension (HX711),HX711 board,A-,Load cell,White lead (typical),Signal -,n/a,Channel A gain 128 is selected by firmware.
+H8,Tension (HX711),HX711 board,A+,Load cell,Green lead (typical),Signal +,n/a,Polarity is not critical: zero + tare derives the sign from the reference mass so wire tension reads positive either way.
+O1,Optional safety (compiled out),Teensy 4.1,Pin 33,Run-permit switch,Contact 1,RUN PERMIT,PIN_RUN_PERMIT (HAS_RUN_PERMIT = 0),Only if HAS_RUN_PERMIT set to 1. INPUT_PULLUP; LOW = run enabled. Leave unwired while the flag is 0.
+O2,Optional safety (compiled out),Run-permit switch,Contact 2,Teensy 4.1,GND,RUN PERMIT return,n/a,Closed = enabled; opening it trips FAULT_FAILSAFE.
+O3,Optional safety (compiled out),Teensy 4.1,Pin 34,Snag sensor,Output,SNAG,PIN_SNAG_FAULT (HAS_SNAG_FAULT = 0),Only if HAS_SNAG_FAULT set to 1. INPUT_PULLUP; LOW = OK; HIGH trips FAULT_SNAG. Code comment suggests pin 32 as an alternative.
+O4,Optional safety (compiled out),Snag sensor,GND / return,Teensy 4.1,GND,SNAG return,n/a,
+C1,Driver configuration (not a wire),Winder DM542T,DIP SW5-SW8,(setting),SW5 OFF / SW6 ON / SW7 ON / SW8 ON,400 steps/rev,WINDER_STEPS_PER_REV = 400,Must match the constant or turn count and speed will be wrong.
+C2,Driver configuration (not a wire),Traverse DM542T,DIP SW5-SW8,(setting),SW5 OFF / SW6 ON / SW7 ON / SW8 ON,400 steps/rev,TRAV_STEPS_PER_REV = 400,Must match the constant or traverse spacing will be wrong.
+C3,Driver configuration (not a wire),Both DM542T,DIP SW1-SW4,(setting),Per DM542T manual,Current / standstill current,not set by firmware,Choose peak current for your motor and load using the DM542T current table.
+C4,Signal level note,Teensy 4.1,Pins 2-5,DM542T,PUL+ / DIR+,3.3 V logic,n/a,The DM542T manual specifies 4-5 V for a HIGH input. Direct 3.3 V drive works on the reference build but is below spec; a 5 V buffer such as a 74AHCT125 on pins 2-5 is the in-spec option.

@@ -1,0 +1,20 @@
+# Arduino / Teensy / PlatformIO build artifacts
+*.hex
+*.elf
+*.bin
+*.map
+build/
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Fusion 360 local cache / lock files
+*.f3d.lock
+~$*
+.autosave/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
