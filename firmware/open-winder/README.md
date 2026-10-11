@@ -2,11 +2,11 @@
 
 Target: Teensy 4.1, built with Arduino IDE + Teensyduino.
 
-`open_winder_public.ino` is the current public firmware (based on rev 2026-09-16b).
+`open_winder_public.ino` is the current public firmware (public release r2, 2026-10-11, based on rev 2026-09-16b). See `../CHANGELOG.md`.
 
 ## Before your first run
 
-- Set `TRAV_LEAD_UM_PER_REV` to your traverse lead screw (in microns per revolution).
+- Set `TRAV_LEAD_UM_PER_REV` to your traverse lead screw in microns per revolution. The default is 5000 (5 mm/rev, the reference machine). Lead x 1000 / `TRAV_STEPS_PER_REV` must be a whole number of nanometres; the build stops with a message if it is not.
 - Set `WINDER_STEPS_PER_REV` and `TRAV_STEPS_PER_REV` to match the DM542T DIP switches on each drive (the defaults assume 400 steps/rev: SW5 OFF, SW6 ON, SW7 ON, SW8 ON).
 - The `defcal` window constants (`DEFAULT_PROFILE_*`, `DEFAULT_CAL_OFF*`) came from the reference machine. Run `cal`, set your bounds with `jogt`/`jogb`/`savet`/`saveb`, send `donecal`, then `stat`, and copy `DEF_TOP_INSET_STEPS` / `DEF_BOTTOM_INSET_STEPS` into the sketch.
 

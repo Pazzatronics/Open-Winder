@@ -2,6 +2,22 @@
   Open Winder - Guitar Pickup Coil Winder Firmware
   Teensy 4.1
 
+  Public release r2, 2026-10-11 - traverse lead screw 5 mm/rev
+  -------------------------------------------------------------
+  - TRAV_LEAD_UM_PER_REV 4000 -> 5000. The reference machine's lead screw is 5 mm/rev;
+    the 4 mm value was an error, so every traverse distance in mm was 25% short of
+    what the carriage really moved (space 1.0 actually wound at 1.25 mm/turn).
+  - Traverse drive stays at 400 steps/rev (no DIP change). 5 mm / 400 = 12.5 um per
+    step, which is not a whole number of microns, so step <-> distance math now runs in
+    nanometres (TRAV_STEP_NM). Distances typed in mm (space, offtop, offbottom, softdist,
+    mid, nudge) are now true millimetres.
+  - Step-based calibration data is unchanged, so the defcal window lands in the same
+    physical place: insets stay 1621 / 214 steps, and DEFAULT_CAL_OFFTOP_UM becomes
+    4063 (the same 325 steps that 3250 meant under the old 4 mm assumption).
+  - CAL_BACKOFF_UM (5500) now backs off a true 5.5 mm (it was 6.875 mm on the machine).
+  - Calibration / jog / nudge speeds are unchanged on the machine; comments corrected.
+  - Most pitch the traverse can deliver: 400 x 12.5 um = 5.0 mm per spindle turn.
+
   Public release (derived from rev 2026-09-16b)
   ---------------------------------------------
   - Product-specific winding presets removed. Set up a job with
@@ -186,10 +202,12 @@ static constexpr uint32_t TENSION_DROP_IGNORE_START_TURNS = 5;  // ignore first 
 // -----------------------------------------------------------------------------
 // Traverse DM542 must be set to 400 steps/rev: SW5 OFF, SW6 ON, SW7 ON, SW8 ON.
 static constexpr int32_t TRAV_STEPS_PER_REV   = 400;
-static constexpr int32_t TRAV_LEAD_UM_PER_REV = 4000;  // 4.000 mm / rev lead screw
-static constexpr int32_t TRAV_STEP_UM         = TRAV_LEAD_UM_PER_REV / TRAV_STEPS_PER_REV;  // 10 um = 0.010 mm / step
-static_assert(TRAV_LEAD_UM_PER_REV % TRAV_STEPS_PER_REV == 0,
-              "TRAV_STEP_UM must be a whole number of microns (1600 steps/rev would give 2.5 um and silently truncate)");
+static constexpr int32_t TRAV_LEAD_UM_PER_REV = 5000;  // 5.000 mm / rev lead screw (reference machine)
+// One traverse step in NANOMETRES: 5 mm / 400 steps = 12.5 um is not a whole number of
+// microns, so every step <-> distance conversion goes through nanometres.
+static constexpr int32_t TRAV_STEP_NM         = (TRAV_LEAD_UM_PER_REV * 1000) / TRAV_STEPS_PER_REV;  // 12500 nm = 0.0125 mm / step
+static_assert((TRAV_LEAD_UM_PER_REV * 1000) % TRAV_STEPS_PER_REV == 0,
+              "TRAV_STEP_NM must be a whole number of nanometres; pick a lead / steps-per-rev pair that divides evenly");
 // Winder DM542 is set to 400 steps/rev: SW5 OFF, SW6 ON, SW7 ON, SW8 ON (bench-verified 2026-09-16).
 static constexpr int32_t WINDER_STEPS_PER_REV = 400;
 
@@ -199,13 +217,14 @@ static constexpr int32_t WINDER_STEPS_PER_REV = 400;
 static constexpr uint32_t MIN_RPM = 1;
 static constexpr uint32_t MAX_RPM = 1500;
 
-static constexpr uint32_t NUDGE_STEP_DELAY_US = 6000;  // doubled for 4 mm/rev screw; same linear nudge speed as old 2 mm/rev
+static constexpr uint32_t NUDGE_STEP_DELAY_US = 6000;  // 12.5 um per 6 ms = about 2.1 mm/s with the 5 mm screw
 static constexpr uint32_t NUDGE_DIR_SETTLE_US = 50;
 
-static constexpr uint32_t CAL_FAST_RPM   = 60;   // was 120 with 2 mm/rev; same linear speed with 4 mm/rev
-static constexpr uint32_t CAL_SLOW_RPM   = 10;   // was 20 with 2 mm/rev; same linear speed with 4 mm/rev
-static constexpr uint32_t CAL_CENTER_RPM = 20;   // was 40 with 2 mm/rev; same linear speed with 4 mm/rev
-static constexpr uint32_t JOG_RPM        = 12;   // approx old 25 rpm linear jog speed
+// Traverse MOTOR rpm; linear speed = rpm x 5 mm / 60 with the 5 mm screw.
+static constexpr uint32_t CAL_FAST_RPM   = 60;   // 5.0 mm/s
+static constexpr uint32_t CAL_SLOW_RPM   = 10;   // about 0.83 mm/s
+static constexpr uint32_t CAL_CENTER_RPM = 20;   // about 1.67 mm/s
+static constexpr uint32_t JOG_RPM        = 12;   // 1.0 mm/s
 
 static constexpr uint32_t DEFAULT_RPM     = 500;
 static constexpr uint32_t START_FLOOR_RPM = 30;
@@ -236,7 +255,7 @@ static constexpr uint32_t AUTO_RECAL_INTERVAL_TURNS = 2000;
 // -----------------------------------------------------------------------------
 static constexpr int32_t DEFAULT_PROFILE_TOP_INSET_STEPS    = 1621;
 static constexpr int32_t DEFAULT_PROFILE_BOTTOM_INSET_STEPS = 214;
-static constexpr int32_t DEFAULT_CAL_OFFTOP_UM              = 3250;
+static constexpr int32_t DEFAULT_CAL_OFFTOP_UM              = 4063;  // 325 steps; was 3250 under the old 4 mm assumption (same physical spot)
 static constexpr int32_t DEFAULT_CAL_OFFBOTTOM_UM           = 0;
 static constexpr int32_t DEFAULT_PROFILE_SOFTDIST_UM        = 500;
 static constexpr uint8_t DEFAULT_PROFILE_SOFTPCT            = 40;
@@ -352,7 +371,7 @@ struct RuntimeData {
   uint32_t stepInTurn = 0;
 
   int64_t traverseDemandNumer = 0;
-  int32_t travelSinceReverse_um = DEFAULT_SOFTDIST_UM;
+  int64_t travelSinceReverse_nm = (int64_t)DEFAULT_SOFTDIST_UM * 1000;  // nm: a step is 12.5 um
 
   bool stopRequested = false;
   bool pauseRequested = false;
@@ -610,8 +629,22 @@ const char* travDirName(TraverseDir d) { return d == TraverseDir::TO_TOP ? "top"
 
 int32_t mmToUm(float mm) { return (int32_t)lroundf(mm * 1000.0f); }
 float umToMm(int32_t um) { return ((float)um) / 1000.0f; }
-int32_t umToSteps(int32_t um) { return um >= 0 ? um / TRAV_STEP_UM : -((-um) / TRAV_STEP_UM); }
-float stepsToMm(int32_t steps) { return ((float)(steps * TRAV_STEP_UM)) / 1000.0f; }
+// Traverse step <-> distance. All via nanometres (TRAV_STEP_NM); truncates toward zero.
+int32_t umToSteps(int32_t um) {
+  int64_t nm = (int64_t)um * 1000;
+  return (int32_t)(nm >= 0 ? nm / TRAV_STEP_NM : -((-nm) / TRAV_STEP_NM));
+}
+int32_t stepsToUm(int32_t steps) { return (int32_t)(((int64_t)steps * TRAV_STEP_NM) / 1000); }
+float stepsToMm(int32_t steps) { return ((float)((int64_t)steps * TRAV_STEP_NM)) / 1000000.0f; }
+
+// Soft-zone departure tracking: add one traverse step, capped at the soft distance.
+void addTravelSinceReverseStep() {
+  int64_t softNm = (int64_t)cfg.softDist_um * 1000;
+  if (rt.travelSinceReverse_nm < softNm) {
+    rt.travelSinceReverse_nm += TRAV_STEP_NM;
+    if (rt.travelSinceReverse_nm > softNm) rt.travelSinceReverse_nm = softNm;
+  }
+}
 
 int32_t clampI32(int32_t x, int32_t lo, int32_t hi) {
   if (x < lo) return lo;
@@ -1587,8 +1620,8 @@ float getTraverseScale() {
   int32_t activeTop, activeBottom;
   getActiveBounds(activeTop, activeBottom);
 
-  int32_t topDist_um = (activeTop - pos) * TRAV_STEP_UM;
-  int32_t bottomDist_um = (pos - activeBottom) * TRAV_STEP_UM;
+  int32_t topDist_um = stepsToUm(activeTop - pos);
+  int32_t bottomDist_um = stepsToUm(pos - activeBottom);
   int32_t approachDist_um = (rt.traverseDir == TraverseDir::TO_TOP) ? topDist_um : bottomDist_um;
 
   float approachScale;
@@ -1600,10 +1633,11 @@ float getTraverseScale() {
   }
 
   float departScale;
-  if (rt.travelSinceReverse_um <= 0) departScale = minScale;
-  else if (rt.travelSinceReverse_um >= cfg.softDist_um) departScale = 1.0f;
+  int64_t softNm = (int64_t)cfg.softDist_um * 1000;
+  if (rt.travelSinceReverse_nm <= 0) departScale = minScale;
+  else if (rt.travelSinceReverse_nm >= softNm) departScale = 1.0f;
   else {
-    float t = ((float)rt.travelSinceReverse_um) / ((float)cfg.softDist_um);
+    float t = ((float)rt.travelSinceReverse_nm) / ((float)softNm);
     departScale = minScale + (1.0f - minScale) * t;
   }
 
@@ -1611,7 +1645,7 @@ float getTraverseScale() {
 }
 
 void recordReversal() {
-  rt.travelSinceReverse_um = 0;
+  rt.travelSinceReverse_nm = 0;
 }
 
 void emitTraverseSingleStep(TraverseDir dir) {
@@ -1636,10 +1670,7 @@ void emitTraverseSingleStep(TraverseDir dir) {
 
   traverse.positionSteps += (dir == TraverseDir::TO_TOP) ? 1 : -1;
 
-  if (rt.travelSinceReverse_um < cfg.softDist_um) {
-    rt.travelSinceReverse_um += TRAV_STEP_UM;
-    if (rt.travelSinceReverse_um > cfg.softDist_um) rt.travelSinceReverse_um = cfg.softDist_um;
-  }
+  addTravelSinceReverseStep();
 }
 
 void nudgeTraverseMm(float mm, TraverseDir dir) {
@@ -1675,10 +1706,7 @@ void nudgeTraverseMm(float mm, TraverseDir dir) {
     if (dir == TraverseDir::TO_TOP) traverse.positionSteps += 1;
     else traverse.positionSteps -= 1;
 
-    if (rt.travelSinceReverse_um < cfg.softDist_um) {
-      rt.travelSinceReverse_um += TRAV_STEP_UM;
-      if (rt.travelSinceReverse_um > cfg.softDist_um) rt.travelSinceReverse_um = cfg.softDist_um;
-    }
+    addTravelSinceReverseStep();
 
     delayMicroseconds(NUDGE_STEP_DELAY_US);
   }
@@ -1692,7 +1720,7 @@ void resetAutoProgress() {
   rt.pauseRequested = false;
   rt.autoStartPending = false;
   rt.traverseDir = TraverseDir::TO_TOP;
-  rt.travelSinceReverse_um = 0;
+  rt.travelSinceReverse_nm = 0;
   rt.activeTapIndex = -1;
   rt.tapTriggered[0] = rt.tapTriggered[1] = rt.tapTriggered[2] = false;
   rt.autoRecalPending = false;
@@ -1737,8 +1765,10 @@ void handleTraverseDemandOnWinderStep() {
   int32_t scaledSpace_um = (int32_t)lroundf((float)baseSpaceUm * getTraverseScale());
   if (scaledSpace_um < 0) scaledSpace_um = 0;
 
-  rt.traverseDemandNumer += scaledSpace_um;
-  const int64_t DEN = (int64_t)WINDER_STEPS_PER_REV * (int64_t)TRAV_STEP_UM;
+  // Accumulate in nm: each winder step owes space/WINDER_STEPS_PER_REV of travel, and one
+  // traverse step pays TRAV_STEP_NM of it. Exact for a 12.5 um step.
+  rt.traverseDemandNumer += (int64_t)scaledSpace_um * 1000;
+  const int64_t DEN = (int64_t)WINDER_STEPS_PER_REV * (int64_t)TRAV_STEP_NM;
 
   while (rt.traverseDemandNumer >= DEN) {
     maybeReverseTraverse();
@@ -2054,7 +2084,7 @@ void updateCalibrationFind() {
       if (bottomLimitTriggered()) {
         setTraverseRPM(CAL_FAST_RPM, TraverseDir::TO_TOP);
       } else {
-        int32_t moved_um = (traverse.positionSteps - bottomBackoffStart) * TRAV_STEP_UM;
+        int32_t moved_um = stepsToUm(traverse.positionSteps - bottomBackoffStart);
         if (moved_um >= CAL_BACKOFF_UM) {
           stopTraverse();
           bottomBackoffArmed = false;
@@ -2113,7 +2143,7 @@ void updateCalibrationFind() {
       if (topLimitTriggered()) {
         setTraverseRPM(CAL_FAST_RPM, TraverseDir::TO_BOTTOM);
       } else {
-        int32_t moved_um = (topBackoffStart - traverse.positionSteps) * TRAV_STEP_UM;
+        int32_t moved_um = stepsToUm(topBackoffStart - traverse.positionSteps);
         if (moved_um >= CAL_BACKOFF_UM) {
           stopTraverse();
           topBackoffArmed = false;
@@ -2710,7 +2740,7 @@ void printStatus() {
   Serial.print("WINDER_STEPS_PER_REV: "); Serial.println(WINDER_STEPS_PER_REV);
   Serial.print("TRAV_STEPS_PER_REV: "); Serial.println(TRAV_STEPS_PER_REV);
   Serial.print("TRAV_LEAD_MM_PER_REV: "); Serial.println(umToMm(TRAV_LEAD_UM_PER_REV), 3);
-  Serial.print("TRAV_STEP_MM: "); Serial.println(umToMm(TRAV_STEP_UM), 3);
+  Serial.print("TRAV_STEP_MM: "); Serial.println(stepsToMm(1), 4);
   Serial.print("CAL_FAST_RPM: "); Serial.println(CAL_FAST_RPM);
   Serial.print("CAL_SLOW_RPM: "); Serial.println(CAL_SLOW_RPM);
   Serial.print("CAL_CENTER_RPM: "); Serial.println(CAL_CENTER_RPM);
@@ -2806,7 +2836,7 @@ void printStatus() {
   Serial.print("DEF_CHAOS_PCT: "); Serial.println(cfg.chaosPct);
   Serial.print("DEF_CHAOS_PERSIST_TURNS: "); Serial.println(cfg.chaosPersistTurns);
   Serial.print("DEF_RAMP_RPM_PER_SEC: "); Serial.println(cfg.rampRPMperSec);
-  Serial.print("DEF_TRAV_STEP_UM: "); Serial.println(TRAV_STEP_UM);
+  Serial.print("DEF_TRAV_STEP_UM: "); Serial.println((float)TRAV_STEP_NM / 1000.0f, 3);
   Serial.print("DEF_TRAV_LEAD_UM_PER_REV: "); Serial.println(TRAV_LEAD_UM_PER_REV);
 
   if (cal.hardValid && cal.softValid) {
@@ -3753,8 +3783,9 @@ void setup() {
   enterState(MachineState::IDLE);
 
   Serial.println();
-  Serial.println("Open Winder Ready - public release (from rev 2026-09-16b)");
+  Serial.println("Open Winder Ready - public release r2 2026-10-11 (from rev 2026-09-16b)");
   Serial.println("  winder 400 steps/rev, traverse 400 steps/rev (BOTH DM542: SW5 OFF, SW6 ON, SW7 ON, SW8 ON)");
+  Serial.println("  traverse lead 5 mm/rev = 12.5 um per step");
   Serial.println("  HX711 on pins 30/31 at 3.3 V, limits 7=BOTTOM 8=TOP, permit/snag not fitted");
   printHelp();
 }
