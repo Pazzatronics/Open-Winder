@@ -4,6 +4,8 @@ A DIY guitar pickup coil winder built around a Teensy 4.1: standalone touchscree
 
 This repo is open source. Ready-made/printed components based on this design are also sold separately by [Pazzatronics](https://www.pazzatronics.com) — building it yourself from these files is always free and unrestricted under the terms below.
 
+**Building one?** Start with the [Build & Wiring Guide](docs/build-guide.md): parts, every connection, DIP switch settings, firmware setup, calibration and the full command list.
+
 ## Repo layout
 
 ```
@@ -14,7 +16,7 @@ hardware/
   step/         Exported STEP files (winder body, brackets, load-cell pulley, etc.)
   wiring/       Pinout tables, wiring notes, and open_winder_wiring.csv
   bom.md        Bill of materials with sourcing links
-docs/           Bug write-ups, firmware architecture notes, command protocol
+docs/           Build & wiring guide, bug write-ups, firmware architecture notes, command protocol
 ```
 
 ## Hardware stack
