@@ -6,6 +6,26 @@ This repo is open source. Ready-made/printed components based on this design are
 
 **Building one?** Start with the [Build & Wiring Guide](docs/build-guide.md): parts, every connection, DIP switch settings, firmware setup, calibration and the full command list.
 
+## Parts list
+
+**Buying parts? Please use these links.** They're Amazon affiliate links: Amazon pays me a small commission and your price doesn't change. That's what keeps new projects and videos coming for the channel.
+
+| Part | What it does | Link |
+|---|---|---|
+| Traverse | Moves the wire guide back and forth across the bobbin | [Amazon](https://link.amazon/B0cS9iVm1) |
+| Motors | NEMA 23 steppers for the spindle and the traverse (build uses 2) | [Amazon](https://link.amazon/B0akogcUt) |
+| Driver | DM542T stepper drive, one per motor (build uses 2) | [Amazon](https://link.amazon/B08cbkJBz) |
+| Power supply | 24 V supply that powers both drives | [Amazon](https://link.amazon/B0ceYB90f) |
+| Power cable | Mains power to the supply | [Amazon](https://link.amazon/B05tHGsYr) |
+| Load cell | Measures wire tension | [Amazon](https://link.amazon/B0f6mvZfB) |
+| Limit switches | Mark the top and bottom of the traverse travel (build uses 2) | [Amazon](https://link.amazon/B0gYRXbEl) |
+| Teensy 4.1 | The controller that runs the firmware | [Amazon](https://link.amazon/B0ixilNMe) |
+| Coupling | Connects a motor shaft to the part it drives | [Amazon](https://link.amazon/B0jcq9Sza) |
+
+Printed parts are in [`hardware/stl`](hardware/stl). Full specs and notes for every part: [`hardware/bom.md`](hardware/bom.md).
+
+*As an Amazon Associate I earn from qualifying purchases.*
+
 ## Repo layout
 
 ```

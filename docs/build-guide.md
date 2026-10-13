@@ -1,6 +1,6 @@
 # Open Winder — Build & Wiring Guide
 
-Pazzatronics · Last updated October 11, 2026
+Pazzatronics · Last updated October 12, 2026
 
 **Disclaimer.** I wrote this guide with the help of Claude, an AI assistant, and read it over myself, but it may still contain errors. Check every connection and setting against the parts' own datasheets and the files in the repo before you power anything. Don't attempt this project if you have no wiring or coding experience, or if you don't know how to work safely around mains electricity. This guide does not provide safety instruction. You build and use it entirely at your own risk, and I am not liable for any damage, injury or loss that results.
 
@@ -36,6 +36,8 @@ Open Winder needs one controller, two stepper drives, two stepper motors, one mo
 | Run-permit switch, snag sensor | Optional | Extra safety inputs. Supported in firmware but switched off by default | See Optional hardware¹ |
 
 **Printed parts.** The STL folder holds the housing, top and bottom clamps, front and rear *top* motor brackets for both axes, both limit-switch housings, and the tension-sensor housing. The *bottom* motor brackets are in the STEP folder only, so export those four to STL before printing.⁴ All parts are printed in PETG.⁴
+
+**Where to buy.** Amazon links for the traverse, motors, drives, power supply, power cable, load cell, limit switches, Teensy 4.1 and coupling are in the [README parts list](../README.md#parts-list) and the [bill of materials](../hardware/bom.md). If you're buying parts, please use them. They're affiliate links, so your price doesn't change and a small commission helps keep new projects and videos coming. *As an Amazon Associate I earn from qualifying purchases.*
 
 ## Before you wire
 
